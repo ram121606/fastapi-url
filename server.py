@@ -39,10 +39,10 @@ def register(payload: user):
         session.add(user)
         session.commit()
         print("User added Successfully :)")
-        result = "False"
+        result = False
     else:
         print("Already exists :(") 
-        result = "True"
+        result = True
     session.close()
     return {'result': result}
 
@@ -54,10 +54,10 @@ def login(payload: user):
     data = session.query(userTable).filter(payload.username == userTable.username).first()
     if(data.password != payload.password):
         print("User not found :(")
-        result = "False"
+        result = False
     else:
         print("Logged in :)")
-        result = "True"
+        result = True
     session.close()
     return {'result': result}
 
@@ -68,8 +68,9 @@ def url(payload: url):
     print(payload)
     data = urlTable(**payload.model_dump())
     print(data)
-    exists = "False"
-    update = "False"
+    exists = False
+    update = False
+    result = ''
     res = session.query(urlTable.username, urlTable.nickname).filter(data.username == urlTable.username, data.nickname == urlTable.nickname).first()
     con1 = data.username == urlTable.username
     con2 = data.org_url == urlTable.org_url
@@ -91,17 +92,17 @@ def url(payload: url):
         if(original is not None):
             #if exists ask whether to overide with new nickname
             print("update??")
-            update = "True"
+            update = True
         else:
             #else insert the record and return res
-            data.short_url = data.username + '/' + data.nickname
+            data.short_url = os.environ.get('HOST') + data.username + '/' + data.nickname
             session.add(data)
             session.commit()
             print("data added")
             print(data.short_url)
             result = data.short_url
     session.close()
-    return {'host': os.environ.get('HOST')+'/' + result, 'exists': exists, 'update': update}
+    return {'host': result, 'exists': exists, 'update': update}
 
 
 @app.get('/{username}/{nickname}')
@@ -119,9 +120,9 @@ def details(username: str):
     print("<>")
     session = Session(engine)
     result = session.query(urlTable.short_url, urlTable.org_url).filter(username == urlTable.username).all()
-    se_re = [(i.short_url, i.org_url) for i in result]
-    print(se_re)
-    return {'result': se_re}
+    final_result = [(i.short_url, i.org_url) for i in result]
+    # print(final_result)
+    return {'result': final_result}
 
 
 if __name__ == "__main__":
